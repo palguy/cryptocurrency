@@ -595,6 +595,7 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
                     ),
                   ),
                 ),
+                SizedBox(height: 25),
                 Expanded(
                   child: ListView.builder(
                     itemCount: _portfolioBox.length,
@@ -613,7 +614,10 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Text('\$${value.toStringAsFixed(2)}'),
+                            Text(
+                              '\$${value.toStringAsFixed(0)}',
+                              style: TextStyle(fontSize: 22),
+                            ),
                             IconButton(
                               icon: const Icon(
                                 Icons.delete_outline,
@@ -744,8 +748,10 @@ class CalculatorScreen extends StatefulWidget {
 
 class _CalculatorScreenState extends State<CalculatorScreen> {
   final TextEditingController _controller = TextEditingController();
-  final List<double> _increases = [];
-  final List<double> _decreases = [];
+
+  // نستخدم MapEntry لتخزين النسبة (int) كـ Key والسعر (double) كـ Value
+  final List<MapEntry<int, double>> _increases = [];
+  final List<MapEntry<int, double>> _decreases = [];
 
   void _calculate() {
     final double? value = double.tryParse(_controller.text);
@@ -753,9 +759,33 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
     _decreases.clear();
 
     if (value != null) {
-      for (int i = 1; i <= 10; i++) {
-        _increases.add(value * (1 + i / 100.0));
-        _decreases.add(value * (1 - i / 100.0));
+      // 1. تعريف الخطوات المطلوبة: من 1 إلى 10، ثم عشرات حتى 100
+      List<int> steps = [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        20,
+        30,
+        40,
+        50,
+        60,
+        70,
+        80,
+        90,
+        100,
+      ];
+
+      // 2. المرور على كل خطوة وحساب السعر
+      for (int percent in steps) {
+        _increases.add(MapEntry(percent, value * (1 + percent / 100.0)));
+        _decreases.add(MapEntry(percent, value * (1 - percent / 100.0)));
       }
     }
     setState(() {});
@@ -792,89 +822,79 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
               const SizedBox(height: 24),
               if (_increases.isNotEmpty)
                 IntrinsicHeight(
-                  // **** ADDED IntrinsicHeight TO MAKE DIVIDER WORK ****
-                  child: Container(
-                    padding: const EdgeInsets.all(16.0),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.grey),
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // --- Profit Targets Column ---
-                        Expanded(
-                          child: Column(
-                            children: [
-                              Text("أهداف البيع (زيادة)", style: headerStyle),
-                              const SizedBox(height: 8),
-                              ..._increases.asMap().entries.map((entry) {
-                                int percent = entry.key + 1;
-                                double price = entry.value;
-                                return Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 4.0,
-                                  ),
-                                  child: Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text("+$percent%", style: percentStyle),
-                                      Text(
-                                        '\$${price.toStringAsFixed(6)}',
-                                        style: greenStyle,
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              }).toList(),
-                            ],
-                          ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // --- Profit Targets Column ---
+                      Expanded(
+                        child: Column(
+                          children: [
+                            Text("أهداف البيع (زيادة)", style: headerStyle),
+                            const SizedBox(height: 8),
+                            // نستخدم البيانات المخزنة مباشرة
+                            ..._increases.map((entry) {
+                              int percent =
+                                  entry.key; // النسبة المخزنة (مثلاً 20)
+                              double price = entry.value; // السعر المحسوب
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 4.0,
+                                ),
+                                child: Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text("+$percent%", style: percentStyle),
+                                    Text(
+                                      '\$${price.toStringAsFixed(4)}',
+                                      style: greenStyle,
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }).toList(),
+                          ],
                         ),
+                      ),
 
-                        // **** THIS IS THE NEW DIVIDER ****
-                        const VerticalDivider(
-                          width: 20,
-                          thickness: 1,
-                          indent: 40,
-                          endIndent: 10,
-                          color: Colors.grey,
-                        ),
+                      const VerticalDivider(
+                        width: 20,
+                        thickness: 1,
+                        indent: 40,
+                        endIndent: 10,
+                        color: Colors.grey,
+                      ),
 
-                        // --- Loss Targets Column ---
-                        Expanded(
-                          child: Column(
-                            children: [
-                              Text(
-                                "أهداف الشراء (نقصان)",
-                                style: headerStyle,
-                                textAlign: TextAlign.right,
-                              ),
-                              const SizedBox(height: 8),
-                              ..._decreases.asMap().entries.map((entry) {
-                                int percent = entry.key + 1;
-                                double price = entry.value;
-                                return Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 4.0,
-                                  ),
-                                  child: Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text("-$percent%", style: percentStyle),
-                                      Text(
-                                        '\$${price.toStringAsFixed(6)}',
-                                        style: redStyle,
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              }).toList(),
-                            ],
-                          ),
+                      // --- Loss Targets Column ---
+                      Expanded(
+                        child: Column(
+                          children: [
+                            Text("أهداف الشراء (نقصان)", style: headerStyle),
+                            const SizedBox(height: 8),
+                            ..._decreases.map((entry) {
+                              int percent = entry.key;
+                              double price = entry.value;
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 4.0,
+                                ),
+                                child: Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text("-$percent%", style: percentStyle),
+                                    Text(
+                                      '\$${price.toStringAsFixed(4)}',
+                                      style: redStyle,
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }).toList(),
+                          ],
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
             ],
